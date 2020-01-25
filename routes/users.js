@@ -1,10 +1,10 @@
 var express = require("express");
 var router = express.Router();
 var User = require("../models/User");
-// var jwt = require('jsonwebtoken');
+var jwt = require('jsonwebtoken');
 
 // Add A New User
-router.post("/", function(req, res) {
+router.post("/", function(req, res, next) {
   User.create(req.body, (err, user) => {
     console.log(user);
     if (err) return next(err);
@@ -23,13 +23,30 @@ router.get("/", (req, res, next) => {
 // Login
 router.post("/login", function(req, res, next) {
   User.findOne({ email: req.body.email }, (err, user) => {
-    console.log(user);
-    if (err) return next(err);
-    if (!user) return res.send("Enter Valid Email");
+    console.log(user,"this is user");
+    if (err) return res.json({err});
+    if (!user) return res.json("Enter Valid Email");
     if (!user.verifyPassword(req.body.password)) {
-      res.send("InCorrect Password");
+      res.json("InCorrect Password");
     }
-    res.json({ success: true, user });
+     jwt.sign(
+      {
+        username: user.username,
+        userId: user._id,
+        email: user.email
+      },
+      "thisissecret",
+      (err, token) => {
+        if (err)
+          return res.json({ success: false, msg: "token not generated" });
+        console.log(token)
+        res.json({
+          token,
+          username: user.username,
+          email: user.email
+        });
+      }
+    );
   });
 });
 
